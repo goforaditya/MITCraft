@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MITcraft OS - Game OS for Raspberry Pi</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Roboto:wght@300;400;700&display=swap');
+        
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f0f8ff;
+            color: #2a4365;
+        }
+        
+        .pixel-font {
+            font-family: 'Press Start 2P', cursive;
+        }
+        
+        .hero-gradient {
+            background: linear-gradient(135deg, #a5d8ff 0%, #7dc4ff 100%);
+        }
+        
+        .game-card {
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(16px);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            transform-style: preserve-3d;
+        }
+        
+        .game-card:hover {
+            transform: translateY(-8px) rotateX(10deg) rotateY(5deg);
+            box-shadow: 0 20px 40px rgba(31, 38, 135, 0.2);
+            border-color: rgba(255, 255, 255, 0.6);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(90deg, #ff9a8b 0%, #ff6b95 100%);
+            color: white;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(255, 106, 149, 0.3);
+            transform-style: preserve-3d;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(100, 255, 218, 0.4);
+        }
+        
+        .feature-icon {
+            color: #ff6b95;
+            font-size: 2.5rem;
+            filter: drop-shadow(2px 2px 0 rgba(0,0,0,0.1));
+            transition: all 0.3s ease;
+        }
+        .feature-icon:hover {
+            transform: scale(1.2) rotate(10deg);
+        }
+        
+        .nav-link {
+            position: relative;
+        }
+        
+        .nav-link::after {
+            content: '';
+            position: absolute;
+            width: 0;
+            height: 2px;
+            bottom: -5px;
+            left: 0;
+            background-color: #64ffda;
+            transition: width 0.3s;
+        }
+        
+        .nav-link:hover::after {
+            width: 100%;
+        }
+        
+        .terminal {
+            background-color: rgba(255, 255, 255, 0.85);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 16px;
+            box-shadow: 0 8px 32px rgba(31, 38, 135, 0.1);
+            font-family: 'Courier New', monospace;
+            color: #ccd6f6;
+        }
+        
+        .terminal-header {
+            background-color: #1e2a4a;
+            padding: 5px 10px;
+            border-top-left-radius: 5px;
+            border-top-right-radius: 5px;
+        }
+        
+        .terminal-body {
+            padding: 15px;
+        }
+        
+        .prompt {
+            color: #64ffda;
+        }
+        
+        .cursor {
+            animation: blink 1s infinite;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        @keyframes float-delay {
+            0%, 100% { transform: translateY(-10px) rotate(5deg); }
+            50% { transform: translateY(10px) rotate(-5deg); }
+        }
+        .animate-float {
+            animation: float 8s ease-in-out infinite;
+        }
+        .animate-float-delay {
+            animation: float-delay 10s ease-in-out infinite;
+        }
+        @keyframes blink {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0; }
+        }
+        
+        .screenshot {
+            border: 2px solid #1e2a4a;
+            transition: all 0.3s;
+        }
+        
+        .screenshot:hover {
+            border-color: #64ffda;
+            transform: scale(1.02);
+        }
+        
+        .timeline-item {
+            position: relative;
+            padding-left: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 5px;
+            width: 15px;
+            height: 15px;
+            border-radius: 50%;
+            background-color: #64ffda;
+        }
+        
+        .timeline-connector {
+            position: absolute;
+            left: 7px;
+            top: 20px;
+            bottom: -25px;
+            width: 1px;
+            background-color: #64ffda;
+        }
+        
+        .purchase-option {
+            transition: all 0.3s;
+            border: 1px solid #1e2a4a;
+        }
+        
+        .purchase-option:hover {
+            transform: translateY(-5px);
+            border-color: #64ffda;
+            box-shadow: 0 10px 20px rgba(100, 255, 218, 0.1);
+        }
+        
+        .popular-badge {
+            background: linear-gradient(90deg, #64ffda 0%, #5df7b7 100%);
+            color: #0a192f;
+            transform: rotate(15deg);
+        }
+    </style>
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="bg-[rgba(240,248,255,0.8)] border-b border-[rgba(255,255,255,0.3)] sticky top-0 z-50 backdrop-filter backdrop-blur-lg">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 flex items-center">
+                        <i class="fas fa-gamepad text-2xl text-[#64ffda] mr-2"></i>
+                        <span class="pixel-font text-xl text-white">MITcraft OS</span>
+                    </div>
+                </div>
+                <div class="hidden md:block">
+                    <div class="ml-10 flex items-baseline space-x-8">
+                        <a href="#features" class="nav-link text-white px-3 py-2 rounded-md text-sm font-medium">Features</a>
+                        <a href="#gameplay" class="nav-link text-white px-3 py-2 rounded-md text-sm font-medium">Gameplay</a>
+                        <a href="#timeline" class="nav-link text-white px-3 py-2 rounded-md text-sm font-medium">Development</a>
+                        <a href="#pricing" class="nav-link text-white px-3 py-2 rounded-md text-sm font-medium">Purchase</a>
+                        <a href="#faq" class="nav-link text-white px-3 py-2 rounded-md text-sm font-medium">FAQ</a>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button class="mobile-menu-button p-2 rounded-md text-white hover:text-[#64ffda] focus:outline-none">
+                        <i class="fas fa-bars"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile menu -->
+        <div class="mobile-menu hidden md:hidden bg-[#112240]">
+            <div class="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <a href="#features" class="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-[#1e2a4a]">Features</a>
+                <a href="#gameplay" class="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-[#1e2a4a]">Gameplay</a>
+                <a href="#timeline" class="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-[#1e2a4a]">Development</a>
+                <a href="#pricing" class="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-[#1e2a4a]">Purchase</a>
+                <a href="#faq" class="block px-3 py-2 rounded-md text-base font-medium text-white hover:bg-[#1e2a4a]">FAQ</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="absolute top-20 right-20 w-32 h-32 rounded-full bg-[#ff9a8b] opacity-20 filter blur-3xl animate-float"></div>
+    <div class="absolute bottom-40 left-20 w-40 h-40 rounded-full bg-[#7dc4ff] opacity-20 filter blur-3xl animate-float-delay"></div>
+    
+    <!-- Hero Section -->
+    <section class="hero-gradient py-20 px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl mx-auto">
+            <div class="md:flex items-center justify-between">
+                <div class="md:w-1/2 mb-10 md:mb-0">
+                    <h1 class="text-4xl md:text-6xl font-bold text-[#2a4365] mb-6 pixel-font" style="text-shadow: 4px 4px 0 rgba(255, 106, 149, 0.2);">
+                        <span class="text-[#ff6b95]">MITcraft</span> OS
+                    </h1>
+                    <h2 class="text-xl md:text-2xl text-[#ccd6f6] mb-8">
+                        The game operating system that turns your Raspberry Pi into an MIT adventure
+                    </h2>
+                    <p class="text-lg text-[#8892b0] mb-8">
+                        Experience a complete operating system with game-style interfaces, where every system interaction is part of an epic RPG about becoming a founding engineer at MIT.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#pricing" class="btn-primary px-8 py-3 rounded-md font-bold">Buy Now</a>
+                        <a href="#features" class="px-8 py-3 rounded-md font-bold border border-[#64ffda] text-[#64ffda] hover:bg-[#64ffda] hover:text-[#0a192f] transition">Learn More</a>
+                    </div>
+                </div>
+                <div class="md:w-1/2 flex justify-center">
+                    <div class="terminal max-w-md w-full">
+                        <div class="terminal-header flex items-center">
+                            <div class="w-3 h-3 rounded-full bg-red-500 mr-2"></div>
+                            <div class="w-3 h-3 rounded-full bg-yellow-500 mr-2"></div>
+                            <div class="w-3 h-3 rounded-full bg-green-500 mr-2"></div>
+                            <div class="ml-2 text-sm">terminal@mitcraft:~</div>
+                        </div>
+                        <div class="terminal-body">
+                            <p class="mb-2"><span class="prompt">$</span> ./mitcraft --start</p>
+                            <p class="mb-2 text-[#64ffda]">Loading MITcraft OS v2.0...</p>
+                            <p class="mb-2">Initializing game engine...</p>
+                            <p class="mb-2">Connecting to MIT servers...</p>
+                            <p class="mb-2">Welcome to MITcraft OS!</p>
+                            <p class="mb-2">Your journey to becoming a founding engineer begins now.</p>
+                            <p class="mb-2">1. New Game</p>
+                            <p class="mb-2">2. Load Game</p>
+                            <p class="mb-2">3. System Settings</p>
+                            <p class="mb-2">4. Exit</p>
+                            <p><span class="prompt">></span> <span class="cursor">_</span></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="py-20 px-4 sm:px-6 lg:px-8 bg-[#112240]">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-4 pixel-font">OS Features</h2>
+                <p class="text-xl text-[#8892b0] max-w-3xl mx-auto">
+                    MITcraft OS transforms your Raspberry Pi into a fully functional game console with unique MIT-themed features
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <div class="game-card p-8 rounded-lg">
+                    <div class="feature-icon mb-4">
+                        <i class="fas fa-terminal"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Game-Style Terminal</h3>
+                    <p class="text-[#8892b0]">
+                        All system commands are executed through an immersive terminal interface that feels like part of the game world.
+                    </p>
+                </div>
+                
+                <div class="game-card p-8 rounded-lg">
+                    <div class="feature-icon mb-4">
+                        <i class="fas fa-graduation-cap"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">MIT Curriculum</h3>
+                    <p class="text-[#8892b0]">
+                        Learn real computer science concepts through in-game quests based on MIT's OpenCourseWare.
+                    </p>
+                </div>
+                
+                <div class="game-card p-8 rounded-lg">
+                    <div class="feature-icon mb-4">
+                        <i class="fas fa-network-wired"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Network Simulation</h3>
+                    <p class="text-[#8892b0]">
+                        Build and configure networks in-game that mirror real Raspberry Pi networking capabilities.
+                    </p>
+                </div>
+                
+                <div class="game-card p-8 rounded-lg">
+                    <div class="feature-icon mb-4">
+                        <i class="fas fa-laptop-code"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">IDE Integration</h3>
+                    <p class="text-[#8892b0]">
+                        Code editors and development tools are seamlessly integrated into the game environment.
+                    </p>
+                </div>
+                
+                <div class="game-card p-8 rounded-lg">
+                    <div class="feature-icon mb-4">
+                        <i class="fas fa-server"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">System Management</h3>
+                    <p class="text-[#8892b0]">
+                        Manage your actual Raspberry Pi system through game menus for updates, settings, and monitoring.
+                    </p>
+                </div>
+                
+                <div class="game-card p-8 rounded-lg">
+                    <div class="feature-icon mb-4">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-3">Multiplayer Campus</h3>
+                    <p class="text-[#8892b0]">
+                        Connect with other players in a virtual MIT campus where you can collaborate on projects.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Gameplay Section -->
+    <section id="gameplay" class="py-20 px-4 sm:px-6 lg:px-8 bg-[#0a192f]">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-4 pixel-font">Gameplay Experience</h2>
+                <p class="text-xl text-[#8892b0] max-w-3xl mx-auto">
+                    Live the life of an MIT student while learning real system administration and engineering skills
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+                <div>
+                    <h3 class="text-2xl font-bold text-white mb-6">Core RPG Mechanics</h3>
+                    <p class="text-[#8892b0] mb-6">
+                        As a new student at virtual MIT, you'll navigate campus life, attend classes, complete projects, and build your skills across multiple disciplines. Your character has stats in areas like:
+                    </p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-[#112240] p-4 rounded-lg border border-[#1e2a4a]">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-brain text-[#64ffda] mr-2"></i>
+                                <span class="font-bold text-white">Algorithmics</span>
+                            </div>
+                            <p class="text-sm text-[#8892b0]">Problem-solving and efficiency</p>
+                        </div>
+                        <div class="bg-[#112240] p-4 rounded-lg border border-[#1e2a4a]">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-project-diagram text-[#64ffda] mr-2"></i>
+                                <span class="font-bold text-white">Systems</span>
+                            </div>
+                            <p class="text-sm text-[#8892b0]">OS and network understanding</p>
+                        </div>
+                        <div class="bg-[#112240] p-4 rounded-lg border border-[#1e2a4a]">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-flask text-[#64ffda] mr-2"></i>
+                                <span class="font-bold text-white">Research</span>
+                            </div>
+                            <p class="text-sm text-[#8892b0]">Experimental design and analysis</p>
+                        </div>
+                        <div class="bg-[#112240] p-4 rounded-lg border border-[#1e2a4a]">
+                            <div class="flex items-center mb-2">
+                                <i class="fas fa-users-cog text-[#64ffda] mr-2"></i>
+                                <span class="font-bold text-white">Leadership</span>
+                            </div>
+                            <p class="text-sm text-[#8892b0]">Team management and vision</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-center">
+                    <img src="https://via.placeholder.com/500x300/112240/64ffda?text=Gameplay+Screenshot" alt="Gameplay screenshot" class="rounded-lg screenshot w-full max-w-md">
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+                <div class="order-last lg:order-first flex justify-center">
+                    <img src="https://via.placeholder.com/500x300/112240/64ffda?text=System+Menu" alt="System menu screenshot" class="rounded-lg screenshot w-full max-w-md">
+                </div>
+                <div>
+                    <h3 class="text-2xl font-bold text-white mb-6">OS Integration</h3>
+                    <p class="text-[#8892b0] mb-6">
+                        Every system function is accessible through game menus that maintain the RPG aesthetic while providing full control over your Raspberry Pi:
+                    </p>
+                    <ul class="space-y-4">
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">File management through in-game "backpack" inventory</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">Network configuration via "campus wifi" minigame</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">Package management through "class registration" system</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">System monitoring via "student health center" interface</span>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Development Timeline -->
+    <section id="timeline" class="py-20 px-4 sm:px-6 lg:px-8 bg-[#112240]">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-4 pixel-font">Development Journey</h2>
+                <p class="text-xl text-[#8892b0] max-w-3xl mx-auto">
+                    MITcraft OS was created by a team of MIT alumni who wanted to make system administration more engaging
+                </p>
+            </div>
+            
+            <div class="max-w-3xl mx-auto">
+                <div class="timeline-item">
+                    <div class="timeline-connector"></div>
+                    <h3 class="text-xl font-bold text-[#64ffda] mb-2">Concept Phase</h3>
+                    <p class="text-sm text-[#8892b0] mb-1">January 2022</p>
+                    <p class="text-[#ccd6f6]">
+                        Initial idea conceived during MIT's Independent Activities Period. The goal was to create an operating system that teaches through gameplay.
+                    </p>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-connector"></div>
+                    <h3 class="text-xl font-bold text-[#64ffda] mb-2">Prototype Development</h3>
+                    <p class="text-sm text-[#8892b0] mb-1">March - June 2022</p>
+                    <p class="text-[#ccd6f6]">
+                        First playable prototype built on Raspberry Pi OS Lite with custom game engine integration. Core RPG mechanics established.
+                    </p>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-connector"></div>
+                    <h3 class="text-xl font-bold text-[#64ffda] mb-2">Alpha Testing</h3>
+                    <p class="text-sm text-[#8892b0] mb-1">August 2022</p>
+                    <p class="text-[#ccd6f6]">
+                        Tested with 50 MIT students. Feedback led to major UI improvements and curriculum integration.
+                    </p>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-connector"></div>
+                    <h3 class="text-xl font-bold text-[#64ffda] mb-2">Beta Release</h3>
+                    <p class="text-sm text-[#8892b0] mb-1">November 2022</p>
+                    <p class="text-[#ccd6f6]">
+                        Public beta launched with complete system integration. Over 1,000 downloads in first month.
+                    </p>
+                </div>
+                
+                <div class="timeline-item">
+                    <h3 class="text-xl font-bold text-[#64ffda] mb-2">Version 2.0 Release</h3>
+                    <p class="text-sm text-[#8892b0] mb-1">March 2023</p>
+                    <p class="text-[#ccd6f6]">
+                        Current stable version with multiplayer support, expanded curriculum, and improved performance.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pricing Section -->
+    <section id="pricing" class="py-20 px-4 sm:px-6 lg:px-8 bg-[#0a192f]">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-4 pixel-font">Get MITcraft OS</h2>
+                <p class="text-xl text-[#8892b0] max-w-3xl mx-auto">
+                    Choose the package that fits your needs. All purchases include lifetime updates.
+                </p>
+            </div>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div class="purchase-option p-8 rounded-lg relative">
+                    <h3 class="text-xl font-bold text-white mb-4">Digital Edition</h3>
+                    <p class="text-3xl font-bold text-[#64ffda] mb-6">$29.99</p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">MITcraft OS image download</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">Basic installation guide</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">Email support</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="block w-full py-3 px-4 text-center rounded-md font-bold bg-[#1e2a4a] text-white hover:bg-[#64ffda] hover:text-[#0a192f] transition">Purchase</a>
+                </div>
+                
+                <div class="purchase-option p-8 rounded-lg relative border-2 border-[#64ffda] transform scale-105">
+                    <div class="popular-badge absolute -top-3 -right-3 px-3 py-1 text-xs font-bold rounded-md">
+                        POPULAR
+                    </div>
+                    <h3 class="text-xl font-bold text-white mb-4">Complete Edition</h3>
+                    <p class="text-3xl font-bold text-[#64ffda] mb-6">$49.99</p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">Everything in Digital Edition</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">Printed quick-start guide</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">Exclusive in-game items</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">Priority email support</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="btn-primary block w-full py-3 px-4 text-center rounded-md font-bold">Purchase</a>
+                </div>
+                
+                <div class="purchase-option p-8 rounded-lg relative">
+                    <h3 class="text-xl font-bold text-white mb-4">Raspberry Pi Bundle</h3>
+                    <p class="text-3xl font-bold text-[#64ffda] mb-6">$99.99</p>
+                    <ul class="space-y-3 mb-8">
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">Everything in Complete Edition</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">Pre-configured Raspberry Pi 4</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">Power supply and case</span>
+                        </li>
+                        <li class="flex items-start">
+                            <i class="fas fa-check text-[#64ffda] mt-1 mr-3"></i>
+                            <span class="text-[#ccd6f6]">32GB microSD card</span>
+                        </li>
+                    </ul>
+                    <a href="#" class="block w-full py-3 px-4 text-center rounded-md font-bold bg-[#1e2a4a] text-white hover:bg-[#64ffda] hover:text-[#0a192f] transition">Purchase</a>
+                </div>
+            </div>
+            
+            <div class="mt-16 text-center">
+                <p class="text-[#8892b0] mb-4">Educational or bulk pricing available</p>
+                <a href="#" class="inline-block px-6 py-2 rounded-md font-bold border border-[#64ffda] text-[#64ffda] hover:bg-[#64ffda] hover:text-[#0a192f] transition">Contact Sales</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section id="faq" class="py-20 px-4 sm:px-6 lg:px-8 bg-[#112240]">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-bold text-white mb-4 pixel-font">Frequently Asked Questions</h2>
+                <p class="text-xl text-[#8892b0] max-w-3xl mx-auto">
+                    Everything you need to know about MITcraft OS
+                </p>
+            </div>
+            
+            <div class="max-w-3xl mx-auto">
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-3 flex items-center">
+                        <i class="fas fa-question-circle text-[#64ffda] mr-3"></i>
+                        What Raspberry Pi models are supported?
+                    </h3>
+                    <p class="text-[#ccd6f6] pl-8">
+                        MITcraft OS is optimized for Raspberry Pi 4 (all variants) with 2GB RAM or more. It will also run on Raspberry Pi 3B+ but with reduced performance. We don't recommend using it with older models.
+                    </p>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-3 flex items-center">
+                        <i class="fas fa-question-circle text-[#64ffda] mr-3"></i>
+                        Do I need programming experience to use MITcraft OS?
+                    </h3>
+                    <p class="text-[#ccd6f6] pl-8">
+                        Not at all! The game is designed to teach programming and system administration concepts from the ground up. Complete beginners can start with the basic tutorials, while more experienced users can dive into advanced system customization.
+                    </p>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-3 flex items-center">
+                        <i class="fas fa-question-circle text-[#64ffda] mr-3"></i>
+                        Can I use MITcraft OS as my primary operating system?
+                    </h3>
+                    <p class="text-[#ccd6f6] pl-8">
+                        Yes, MITcraft OS is a fully functional operating system based on Raspberry Pi OS. It includes all the standard applications and utilities, just with a game-style interface. However, we recommend keeping a standard OS installation as well for comparison.
+                    </p>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-3 flex items-center">
+                        <i class="fas fa-question-circle text-[#64ffda] mr-3"></i>
+                        Is the MIT curriculum in the game official MIT content?
+                    </h3>
+                    <p class="text-[#ccd6f6] pl-8">
+                        While inspired by MIT's OpenCourseWare and created by MIT alumni, the in-game curriculum is adapted for the RPG format and isn't an official MIT product. However, it faithfully represents the concepts and approaches used in MIT courses.
+                    </p>
+                </div>
+                
+                <div class="mb-8">
+                    <h3 class="text-xl font-bold text-white mb-3 flex items-center">
+                        <i class="fas fa-question-circle text-[#64ffda] mr-3"></i>
+                        Can I contribute to MITcraft OS development?
+                    </h3>
+                    <p class="text-[#ccd6f6] pl-8">
+                        Absolutely! We're open to contributions from the community. Visit our GitHub repository to see current issues and contribution guidelines. Significant contributors may even see their work reflected in the game world!
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Newsletter -->
+    <section class="py-16 px-4 sm:px-6 lg:px-8 bg-[#0a192f] border-t border-[#1e2a4a]">
+        <div class="max-w-3xl mx-auto text-center">
+            <h2 class="text-2xl md:text-3xl font-bold text-white mb-4">Stay Updated</h2>
+            <p class="text-[#8892b0] mb-8">
+                Subscribe to our newsletter for development updates, MITcraft tips, and exclusive content
+            </p>
+            <form class="flex flex-col sm:flex-row gap-4 max-w-md mx-auto">
+                <input type="email" placeholder="Your email" class="flex-grow px-4 py-3 rounded-md bg-[#112240] border border-[#1e2a4a] text-white focus:outline-none focus:border-[#64ffda]">
+                <button type="submit" class="btn-primary px-6 py-3 rounded-md font-bold">Subscribe</button>
+            </form>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="py-12 px-4 sm:px-6 lg:px-8 bg-[#112240]">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center mb-4">
+                        <i class="fas fa-gamepad text-2xl text-[#64ffda] mr-2"></i>
+                        <span class="pixel-font text-xl text-white">MITcraft OS</span>
+                    </div>
+                    <p class="text-[#8892b0] mb-4">
+                        The game operating system that makes learning computer science an adventure.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-[#8892b0] hover:text-[#64ffda]"><i class="fab fa-twitter"></i></a>
+                        <a href="#" class="text-[#8892b0] hover:text-[#64ffda]"><i class="fab fa-github"></i></a>
+                        <a href="#" class="text-[#8892b0] hover:text-[#64ffda]"><i class="fab fa-discord"></i></a>
+                        <a href="#" class="text-[#8892b0] hover:text-[#64ffda]"><i class="fab fa-youtube"></i></a>
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-white font-bold mb-4">Product</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">Features</a></li>
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">Pricing</a></li>
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">Documentation</a></li>
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">Roadmap</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-white font-bold mb-4">Company</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">About</a></li>
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">Blog</a></li>
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">Careers</a></li>
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">Contact</a></li>
+                    </ul>
+                </div>
+                
+                <div>
+                    <h3 class="text-white font-bold mb-4">Legal</h3>
+                    <ul class="space-y-2">
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">Privacy</a></li>
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">Terms</a></li>
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">Cookie Policy</a></li>
+                        <li><a href="#" class="text-[#8892b0] hover:text-[#64ffda]">License</a></li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="border-t border-[#1e2a4a] mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+                <p class="text-[#8892b0] mb-4 md:mb-0">
+                    &copy; 2023 MITcraft OS. Not affiliated with MIT.
+                </p>
+                <div class="flex space-x-6">
+                    <a href="#" class="text-[#8892b0] hover:text-[#64ffda] text-sm">Status</a>
+                    <a href="#" class="text-[#8892b0] hover:text-[#64ffda] text-sm">Security</a>
+                    <a href="#" class="text-[#8892b0] hover:text-[#64ffda] text-sm">Help</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu toggle
+        const mobileMenuButton = document.querySelector('.mobile-menu-button');
+        const mobileMenu = document.querySelector('.mobile-menu');
+        
+        mobileMenuButton.addEventListener('click', () => {
+            mobileMenu.classList.toggle('hidden');
+        });
+        
+        // Smooth scrolling for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+                
+                // Close mobile menu if open
+                if (!mobileMenu.classList.contains('hidden')) {
+                    mobileMenu.classList.add('hidden');
+                }
+            });
+        });
+        
+        // Add animation to terminal cursor
+        function animateCursor() {
+            const cursor = document.querySelector('.cursor');
+            if (cursor) {
+                setInterval(() => {
+                    cursor.style.opacity = cursor.style.opacity === '0' ? '1' : '0';
+                }, 500);
+            }
+        }
+        
+        // Initialize animations when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            animateCursor();
+        });
+    </script>
+</body>
+</html>
